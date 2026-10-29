@@ -1,6 +1,6 @@
 // ============================================================================
 // Bengal Heritage Atlas — Node.js Backend Server
-// Built with the built-in HTTP module (no Express)
+// Built with the built-in HTTP module and mysql2 (No Express)
 // ============================================================================
 
 const http = require('http');
@@ -10,13 +10,12 @@ const crypto = require('crypto');
 const url = require('url');
 
 // ---------------------------------------------------------------------------
-// 1. Load environment variables from .env (manual parsing, no dotenv)
+// 1. Load environment variables from .env
 // ---------------------------------------------------------------------------
 function loadEnv() {
   const envPath = path.join(__dirname, '.env');
   if (!fs.existsSync(envPath)) {
-    console.warn('[WARN] .env file not found — using defaults / existing env vars.');
-    console.warn('       Copy .env.example to .env and fill in your values.');
+    console.warn('[WARN] .env file not found — using defaults.');
     return;
   }
   const content = fs.readFileSync(envPath, 'utf-8');
@@ -35,7 +34,7 @@ function loadEnv() {
 loadEnv();
 
 // ---------------------------------------------------------------------------
-// 2. MySQL Connection Pool (lazy-loaded)
+// 2. MySQL Connection Pool
 // ---------------------------------------------------------------------------
 let pool = null;
 let dbConnected = false;
@@ -43,9 +42,7 @@ let dbConnected = false;
 async function initDatabase() {
   try {
     const mysql = require('mysql2/promise');
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306', 10),
+    const poolConfig = {
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'bengal_heritage_atlas',
@@ -54,55 +51,33 @@ async function initDatabase() {
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
-    });
+    };
 
-    // Test the connection
+    if (process.env.DB_SOCKET && fs.existsSync(process.env.DB_SOCKET)) {
+      poolConfig.socketPath = process.env.DB_SOCKET;
+    } else if (fs.existsSync('/tmp/mysql_brew.sock')) {
+      poolConfig.socketPath = '/tmp/mysql_brew.sock';
+    } else if (fs.existsSync('/tmp/mysql.sock')) {
+      poolConfig.socketPath = '/tmp/mysql.sock';
+    } else {
+      poolConfig.host = process.env.DB_HOST || '127.0.0.1';
+      poolConfig.port = parseInt(process.env.DB_PORT || '3306', 10);
+    }
+
+    pool = mysql.createPool(poolConfig);
+
     const conn = await pool.getConnection();
     await conn.ping();
     conn.release();
     dbConnected = true;
-    log('INFO', 'MySQL connected successfully.');
+    log('INFO', 'Connected to MySQL database "bengal_heritage_atlas" successfully.');
   } catch (err) {
     dbConnected = false;
     pool = null;
     log('ERROR', `MySQL connection failed: ${err.message}`);
-    console.error('');
-    console.error('  ╔══════════════════════════════════════════════════════════╗');
-    console.error('  ║  Database connection failed.                            ║');
-    console.error('  ║                                                         ║');
-    console.error('  ║  1. Make sure MySQL is running.                         ║');
-    console.error('  ║  2. Copy .env.example → .env and set your credentials. ║');
-    console.error('  ║  3. Create the database: bengal_heritage_atlas          ║');
-    console.error('  ║  4. Run the SQL schema to create tables.               ║');
-    console.error('  ║                                                         ║');
-    console.error('  ║  Static files will still be served.                     ║');
-    console.error('  ╚══════════════════════════════════════════════════════════╝');
-    console.error('');
   }
 }
 
-/**
- * Get a connection from the pool. Attempts to reconnect once if pool is dead.
- */
-async function getConnection() {
-  if (!pool) {
-    await initDatabase();
-    if (!pool) throw new Error('Database not available');
-  }
-  try {
-    return await pool.getConnection();
-  } catch (err) {
-    // Try reconnecting once
-    log('WARN', 'Lost database connection, attempting reconnect…');
-    await initDatabase();
-    if (!pool) throw new Error('Database not available');
-    return await pool.getConnection();
-  }
-}
-
-/**
- * Execute a parameterized query. Returns [rows, fields].
- */
 async function query(sql, params = []) {
   if (!pool) {
     await initDatabase();
@@ -111,7 +86,6 @@ async function query(sql, params = []) {
   try {
     return await pool.execute(sql, params);
   } catch (err) {
-    // Retry once on connection-lost errors
     if (err.code === 'ECONNRESET' || err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNREFUSED') {
       log('WARN', 'Connection lost during query, reconnecting…');
       await initDatabase();
@@ -123,9 +97,9 @@ async function query(sql, params = []) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Session Store (in-memory)
+// 3. In-Memory Session Store
 // ---------------------------------------------------------------------------
-const sessions = new Map(); // token → { userId, username, expiresAt }
+const sessions = new Map(); // token -> { userId, username, expiresAt }
 
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
@@ -153,26 +127,14 @@ function destroySession(token) {
   sessions.delete(token);
 }
 
-// Periodically clean expired sessions every 15 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, session] of sessions) {
-    if (now > session.expiresAt) sessions.delete(token);
-  }
-}, 15 * 60 * 1000);
-
 // ---------------------------------------------------------------------------
-// 4. Helper Functions
+// 4. Utility Helpers
 // ---------------------------------------------------------------------------
-
 function log(level, message) {
   const ts = new Date().toISOString();
   console.log(`[${ts}] [${level}] ${message}`);
 }
 
-/**
- * Parse a JSON request body. Returns parsed object or null.
- */
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -190,9 +152,6 @@ function parseBody(req) {
   });
 }
 
-/**
- * Parse URL query parameters into a plain object.
- */
 function parseQueryParams(reqUrl) {
   const parsed = new URL(reqUrl, 'http://localhost');
   const params = {};
@@ -202,9 +161,6 @@ function parseQueryParams(reqUrl) {
   return params;
 }
 
-/**
- * Send a JSON response.
- */
 function sendJSON(res, statusCode, data) {
   const body = JSON.stringify(data);
   res.writeHead(statusCode, {
@@ -214,16 +170,10 @@ function sendJSON(res, statusCode, data) {
   res.end(body);
 }
 
-/**
- * Send a JSON error response.
- */
 function sendError(res, statusCode, message) {
-  sendJSON(res, statusCode, { error: true, message });
+  sendJSON(res, statusCode, { error: message || 'An error occurred' });
 }
 
-/**
- * Generate a URL-friendly slug from text.
- */
 function slugify(text) {
   return text
     .toString()
@@ -235,21 +185,22 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-/**
- * Middleware-like auth check. Returns session or null.
- */
 function requireAuth(req) {
   const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : authHeader;
+  let token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+
+  // Fallback to query param if needed (e.g. for verify)
+  if (!token) {
+    const parsed = new URL(req.url, 'http://localhost');
+    token = parsed.searchParams.get('token') || '';
+  }
+
   return getSession(token);
 }
 
 // ---------------------------------------------------------------------------
 // 5. Static File Server
 // ---------------------------------------------------------------------------
-
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -265,19 +216,12 @@ const MIME_TYPES = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
-  '.eot': 'application/vnd.ms-fontobject',
-  '.map': 'application/json',
   '.txt': 'text/plain; charset=utf-8',
-  '.xml': 'application/xml',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.pdf': 'application/pdf',
 };
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 function serveStaticFile(req, res, filePath) {
-  // Prevent directory traversal
   const resolved = path.resolve(filePath);
   if (!resolved.startsWith(PUBLIC_DIR)) {
     sendError(res, 403, 'Forbidden');
@@ -286,19 +230,18 @@ function serveStaticFile(req, res, filePath) {
 
   fs.stat(resolved, (err, stats) => {
     if (err || !stats.isFile()) {
-      // If no extension, try appending .html
       if (!path.extname(resolved)) {
         const htmlPath = resolved + '.html';
         fs.stat(htmlPath, (err2, stats2) => {
           if (!err2 && stats2.isFile()) {
             streamFile(res, htmlPath);
           } else {
-            sendError(res, 404, 'Not found');
+            sendError(res, 404, 'File not found');
           }
         });
         return;
       }
-      sendError(res, 404, 'Not found');
+      sendError(res, 404, 'File not found');
       return;
     }
     streamFile(res, resolved);
@@ -308,37 +251,36 @@ function serveStaticFile(req, res, filePath) {
 function streamFile(res, filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
   res.writeHead(200, { 'Content-Type': contentType });
   const stream = fs.createReadStream(filePath);
   stream.pipe(res);
   stream.on('error', () => {
-    sendError(res, 500, 'Error reading file');
+    sendError(res, 500, 'Error streaming file');
   });
 }
 
 // ---------------------------------------------------------------------------
-// 6. API Route Handlers
+// 6. Public API Endpoints
 // ---------------------------------------------------------------------------
 
-// ---- Public: GET /api/destinations ----
+// GET /api/destinations
 async function handleGetDestinations(req, res) {
   const params = parseQueryParams(req.url);
-  const page = Math.max(1, parseInt(params.page) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(params.limit) || 12));
+  const page = Math.max(1, parseInt(params.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(params.limit, 10) || 12));
   const offset = (page - 1) * limit;
 
   let whereClauses = [];
   let queryParams = [];
 
   if (params.search) {
-    whereClauses.push('(d.name LIKE ? OR d.district LIKE ? OR d.short_description LIKE ?)');
+    whereClauses.push('(d.name LIKE ? OR d.district LIKE ? OR d.short_description LIKE ? OR d.historical_background LIKE ?)');
     const searchTerm = `%${params.search}%`;
-    queryParams.push(searchTerm, searchTerm, searchTerm);
+    queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
   }
 
   if (params.category) {
-    whereClauses.push('c.slug = ?');
+    whereClauses.push('d.category_id = ?');
     queryParams.push(params.category);
   }
 
@@ -352,57 +294,59 @@ async function handleGetDestinations(req, res) {
     queryParams.push(params.region);
   }
 
+  if (params.unesco === 'true') {
+    whereClauses.push("d.unesco_status IN ('World Heritage Site', 'Tentative List')");
+  }
+
   const whereSQL = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
   let orderSQL = 'ORDER BY d.is_featured DESC, d.name ASC';
   if (params.sort === 'name_asc') orderSQL = 'ORDER BY d.name ASC';
   else if (params.sort === 'name_desc') orderSQL = 'ORDER BY d.name DESC';
-  else if (params.sort === 'featured') orderSQL = 'ORDER BY d.is_featured DESC, d.created_at DESC';
+  else if (params.sort === 'featured') orderSQL = 'ORDER BY d.is_featured DESC, d.rating DESC, d.name ASC';
 
-  const countSQL = `SELECT COUNT(*) as total FROM destinations d LEFT JOIN categories c ON d.category_id = c.id ${whereSQL}`;
+  const countSQL = `SELECT COUNT(*) as total FROM destinations d ${whereSQL}`;
+  const [countRows] = await query(countSQL, queryParams);
+  const total = countRows[0].total;
+
   const dataSQL = `
-    SELECT d.*, c.name as category_name, c.slug as category_slug
+    SELECT d.*, c.category_name, c.icon as category_icon
     FROM destinations d
-    LEFT JOIN categories c ON d.category_id = c.id
+    LEFT JOIN categories c ON d.category_id = c.category_id
     ${whereSQL}
     ${orderSQL}
     LIMIT ? OFFSET ?
   `;
 
-  const [countRows] = await query(countSQL, queryParams);
-  const total = countRows[0].total;
-
   const [rows] = await query(dataSQL, [...queryParams, String(limit), String(offset)]);
 
   sendJSON(res, 200, {
     destinations: rows,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
   });
 }
 
-// ---- Public: GET /api/destinations/featured ----
+// GET /api/destinations/featured
 async function handleGetFeaturedDestinations(req, res) {
   const [rows] = await query(
-    `SELECT d.*, c.name as category_name, c.slug as category_slug
+    `SELECT d.*, c.category_name, c.icon as category_icon
      FROM destinations d
-     LEFT JOIN categories c ON d.category_id = c.id
+     LEFT JOIN categories c ON d.category_id = c.category_id
      WHERE d.is_featured = 1
-     ORDER BY d.name ASC`
+     ORDER BY d.rating DESC, d.name ASC`
   );
   sendJSON(res, 200, { destinations: rows });
 }
 
-// ---- Public: GET /api/destinations/:slug ----
+// GET /api/destinations/:slug
 async function handleGetDestinationBySlug(req, res, slug) {
   const [rows] = await query(
-    `SELECT d.*, c.name as category_name, c.slug as category_slug
+    `SELECT d.*, c.category_name, c.icon as category_icon
      FROM destinations d
-     LEFT JOIN categories c ON d.category_id = c.id
+     LEFT JOIN categories c ON d.category_id = c.category_id
      WHERE d.slug = ?`,
     [slug]
   );
@@ -413,100 +357,97 @@ async function handleGetDestinationBySlug(req, res, slug) {
 
   const destination = rows[0];
 
-  // Get related images
+  // Images
   let images = [];
   try {
     const [imgRows] = await query(
       'SELECT * FROM destination_images WHERE destination_id = ? ORDER BY sort_order ASC',
-      [String(destination.id)]
+      [String(destination.destination_id)]
     );
     images = imgRows;
-  } catch {
-    // Table might not exist yet — that's fine
+  } catch (e) {
+    log('WARN', `Could not fetch images for ${destination.destination_id}`);
   }
 
-  // Get related destinations (same category or district, exclude current)
-  const [related] = await query(
-    `SELECT d.id, d.name, d.slug, d.district, d.short_description, d.image_url, c.name as category_name
-     FROM destinations d
-     LEFT JOIN categories c ON d.category_id = c.id
-     WHERE d.id != ? AND (d.category_id = ? OR d.district = ?)
-     ORDER BY RAND()
-     LIMIT 4`,
-    [String(destination.id), String(destination.category_id), destination.district]
-  );
+  // Related destinations (same category or district, excluding self)
+  let related = [];
+  try {
+    const [relRows] = await query(
+      `SELECT d.*, c.category_name
+       FROM destinations d
+       LEFT JOIN categories c ON d.category_id = c.category_id
+       WHERE d.destination_id != ? AND (d.category_id = ? OR d.district = ?)
+       ORDER BY d.is_featured DESC, d.rating DESC
+       LIMIT 3`,
+      [String(destination.destination_id), String(destination.category_id), destination.district]
+    );
+    related = relRows;
+  } catch (e) {
+    log('WARN', `Could not fetch related for ${destination.destination_id}`);
+  }
 
-  sendJSON(res, 200, {
-    destination: { ...destination, images },
-    related,
-  });
+  // Attach directly on destination for clean consumption
+  destination.images = images;
+  destination.related = related;
+
+  sendJSON(res, 200, destination);
 }
 
-// ---- Public: GET /api/categories ----
+// GET /api/categories
 async function handleGetCategories(req, res) {
   const [rows] = await query(
-    `SELECT c.*, COUNT(d.id) as destination_count
+    `SELECT c.*, COUNT(d.destination_id) as destination_count
      FROM categories c
-     LEFT JOIN destinations d ON d.category_id = c.id
-     GROUP BY c.id
-     ORDER BY c.name ASC`
+     LEFT JOIN destinations d ON d.category_id = c.category_id
+     GROUP BY c.category_id, c.category_name, c.description, c.icon, c.created_at
+     ORDER BY c.category_name ASC`
   );
-  sendJSON(res, 200, { categories: rows });
+  sendJSON(res, 200, rows);
 }
 
-// ---- Public: GET /api/stats ----
+// GET /api/stats
 async function handleGetStats(req, res) {
   const [destCount] = await query('SELECT COUNT(*) as total FROM destinations');
   const [catCount] = await query('SELECT COUNT(*) as total FROM categories');
   const [distCount] = await query('SELECT COUNT(DISTINCT district) as total FROM destinations');
-
-  let unescoCount = 0;
-  try {
-    const [uRows] = await query("SELECT COUNT(*) as total FROM destinations WHERE is_unesco = 1");
-    unescoCount = uRows[0].total;
-  } catch {
-    // is_unesco column might not exist
-  }
+  const [unescoCount] = await query("SELECT COUNT(*) as total FROM destinations WHERE unesco_status = 'World Heritage Site'");
 
   sendJSON(res, 200, {
-    stats: {
-      destinations: destCount[0].total,
-      categories: catCount[0].total,
-      districts: distCount[0].total,
-      unescoSites: unescoCount,
-    },
+    totalDestinations: destCount[0].total,
+    totalCategories: catCount[0].total,
+    totalDistricts: distCount[0].total,
+    totalUnesco: unescoCount[0].total,
   });
 }
 
-// ---- Public: GET /api/timeline ----
+// GET /api/timeline
 async function handleGetTimeline(req, res) {
-  try {
-    const [rows] = await query('SELECT * FROM timeline_events ORDER BY sort_order ASC');
-    sendJSON(res, 200, { timeline: rows });
-  } catch {
-    // Table might not exist
-    sendJSON(res, 200, { timeline: [] });
-  }
+  const [rows] = await query('SELECT * FROM timeline_events ORDER BY sort_order ASC');
+  sendJSON(res, 200, rows);
 }
 
-// ---- Public: GET /api/districts ----
+// GET /api/districts
 async function handleGetDistricts(req, res) {
   const [rows] = await query(
-    `SELECT district, COUNT(*) as destination_count
+    `SELECT district, COUNT(*) as count
      FROM destinations
      GROUP BY district
      ORDER BY district ASC`
   );
-  sendJSON(res, 200, { districts: rows });
+  sendJSON(res, 200, rows);
 }
 
-// ---- Admin: POST /api/admin/login ----
+// ---------------------------------------------------------------------------
+// 7. Administrative API Endpoints (Protected)
+// ---------------------------------------------------------------------------
+
+// POST /api/admin/login
 async function handleAdminLogin(req, res) {
   let body;
   try {
     body = await parseBody(req);
   } catch {
-    return sendError(res, 400, 'Invalid JSON in request body');
+    return sendError(res, 400, 'Invalid JSON body');
   }
 
   const { username, password } = body;
@@ -514,37 +455,26 @@ async function handleAdminLogin(req, res) {
     return sendError(res, 400, 'Username and password are required');
   }
 
-  const [rows] = await query(
-    'SELECT * FROM admin_users WHERE username = ?',
-    [username]
-  );
-
+  const [rows] = await query('SELECT * FROM admin_users WHERE username = ?', [username]);
   if (rows.length === 0) {
-    return sendError(res, 401, 'Invalid credentials');
+    return sendError(res, 401, 'Invalid username or password');
   }
 
   const admin = rows[0];
   const bcrypt = require('bcryptjs');
   const valid = await bcrypt.compare(password, admin.password_hash);
-
   if (!valid) {
-    return sendError(res, 401, 'Invalid credentials');
+    return sendError(res, 401, 'Invalid username or password');
   }
 
-  const token = createSession(admin.id, admin.username);
-
+  const token = createSession(admin.admin_id, admin.username);
   sendJSON(res, 200, {
-    message: 'Login successful',
     token,
-    admin: {
-      id: admin.id,
-      username: admin.username,
-      email: admin.email,
-    },
+    username: admin.username,
   });
 }
 
-// ---- Admin: POST /api/admin/logout ----
+// POST /api/admin/logout
 async function handleAdminLogout(req, res) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
@@ -552,7 +482,7 @@ async function handleAdminLogout(req, res) {
   sendJSON(res, 200, { message: 'Logged out successfully' });
 }
 
-// ---- Admin: GET /api/admin/verify ----
+// GET /api/admin/verify
 async function handleAdminVerify(req, res) {
   const session = requireAuth(req);
   if (!session) {
@@ -560,25 +490,25 @@ async function handleAdminVerify(req, res) {
   }
   sendJSON(res, 200, {
     valid: true,
-    admin: { userId: session.userId, username: session.username },
+    user: { userId: session.userId, username: session.username },
   });
 }
 
-// ---- Admin: GET /api/admin/destinations ----
+// GET /api/admin/destinations
 async function handleAdminGetDestinations(req, res) {
   const session = requireAuth(req);
   if (!session) return sendError(res, 401, 'Unauthorized');
 
   const [rows] = await query(
-    `SELECT d.*, c.name as category_name
+    `SELECT d.*, c.category_name
      FROM destinations d
-     LEFT JOIN categories c ON d.category_id = c.id
-     ORDER BY d.updated_at DESC, d.created_at DESC`
+     LEFT JOIN categories c ON d.category_id = c.category_id
+     ORDER BY d.updated_at DESC, d.destination_id DESC`
   );
   sendJSON(res, 200, { destinations: rows });
 }
 
-// ---- Admin: POST /api/admin/destinations ----
+// POST /api/admin/destinations
 async function handleAdminCreateDestination(req, res) {
   const session = requireAuth(req);
   if (!session) return sendError(res, 401, 'Unauthorized');
@@ -587,59 +517,63 @@ async function handleAdminCreateDestination(req, res) {
   try {
     body = await parseBody(req);
   } catch {
-    return sendError(res, 400, 'Invalid JSON in request body');
+    return sendError(res, 400, 'Invalid JSON body');
   }
 
-  // Validate required fields
   const required = ['name', 'district', 'category_id', 'short_description'];
   const missing = required.filter((f) => !body[f]);
   if (missing.length > 0) {
     return sendError(res, 400, `Missing required fields: ${missing.join(', ')}`);
   }
 
-  const slug = slugify(body.name);
-
-  // Check for duplicate slug
-  const [existing] = await query('SELECT id FROM destinations WHERE slug = ?', [slug]);
+  let slug = slugify(body.name);
+  const [existing] = await query('SELECT destination_id FROM destinations WHERE slug = ?', [slug]);
   if (existing.length > 0) {
-    return sendError(res, 409, 'A destination with a similar name already exists');
+    slug = `${slug}-${Date.now().toString(36)}`;
   }
 
   const [result] = await query(
-    `INSERT INTO destinations (name, slug, district, region, category_id, short_description,
-     long_description, image_url, latitude, longitude, period, is_featured, is_unesco,
-     visiting_hours, entry_fee, best_time, nearest_city, how_to_reach)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO destinations (
+      slug, name, district, region, category_id, short_description,
+      historical_background, heritage_significance, historical_period, established_year,
+      unesco_status, latitude, longitude, opening_hours, entry_fee,
+      accessibility_info, best_time_to_visit, nearest_city, featured_image_url,
+      image_credit, source_url, is_featured
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      body.name,
       slug,
+      body.name,
       body.district,
       body.region || null,
-      String(body.category_id),
+      parseInt(body.category_id, 10),
       body.short_description,
-      body.long_description || null,
-      body.image_url || null,
-      body.latitude ? String(body.latitude) : null,
-      body.longitude ? String(body.longitude) : null,
-      body.period || null,
-      body.is_featured ? '1' : '0',
-      body.is_unesco ? '1' : '0',
-      body.visiting_hours || null,
+      body.historical_background || null,
+      body.heritage_significance || null,
+      body.historical_period || null,
+      body.established_year || null,
+      body.unesco_status || 'None',
+      body.latitude ? parseFloat(body.latitude) : null,
+      body.longitude ? parseFloat(body.longitude) : null,
+      body.opening_hours || null,
       body.entry_fee || null,
-      body.best_time || null,
+      body.accessibility_info || null,
+      body.best_time_to_visit || null,
       body.nearest_city || null,
-      body.how_to_reach || null,
+      body.featured_image_url || null,
+      body.image_credit || null,
+      body.source_url || null,
+      body.is_featured ? 1 : 0,
     ]
   );
 
   sendJSON(res, 201, {
     message: 'Destination created successfully',
-    id: result.insertId,
+    destination_id: result.insertId,
     slug,
   });
 }
 
-// ---- Admin: PUT /api/admin/destinations/:id ----
+// PUT /api/admin/destinations/:id
 async function handleAdminUpdateDestination(req, res, id) {
   const session = requireAuth(req);
   if (!session) return sendError(res, 401, 'Unauthorized');
@@ -648,21 +582,20 @@ async function handleAdminUpdateDestination(req, res, id) {
   try {
     body = await parseBody(req);
   } catch {
-    return sendError(res, 400, 'Invalid JSON in request body');
+    return sendError(res, 400, 'Invalid JSON body');
   }
 
-  // Verify destination exists
-  const [existing] = await query('SELECT id FROM destinations WHERE id = ?', [String(id)]);
+  const [existing] = await query('SELECT destination_id FROM destinations WHERE destination_id = ?', [String(id)]);
   if (existing.length === 0) {
     return sendError(res, 404, 'Destination not found');
   }
 
-  // Build dynamic update
   const updatableFields = [
     'name', 'district', 'region', 'category_id', 'short_description',
-    'long_description', 'image_url', 'latitude', 'longitude', 'period',
-    'is_featured', 'is_unesco', 'visiting_hours', 'entry_fee', 'best_time',
-    'nearest_city', 'how_to_reach',
+    'historical_background', 'heritage_significance', 'historical_period',
+    'established_year', 'unesco_status', 'latitude', 'longitude',
+    'opening_hours', 'entry_fee', 'accessibility_info', 'best_time_to_visit',
+    'nearest_city', 'featured_image_url', 'image_credit', 'source_url', 'is_featured'
   ];
 
   const setClauses = [];
@@ -671,69 +604,66 @@ async function handleAdminUpdateDestination(req, res, id) {
   for (const field of updatableFields) {
     if (body[field] !== undefined) {
       setClauses.push(`${field} = ?`);
-      if (field === 'is_featured' || field === 'is_unesco') {
-        values.push(body[field] ? '1' : '0');
+      if (field === 'is_featured') {
+        values.push(body[field] ? 1 : 0);
+      } else if (field === 'category_id') {
+        values.push(parseInt(body[field], 10));
+      } else if (field === 'latitude' || field === 'longitude') {
+        values.push(body[field] !== null && body[field] !== '' ? parseFloat(body[field]) : null);
       } else {
-        values.push(body[field] !== null ? String(body[field]) : null);
+        values.push(body[field] !== null && body[field] !== '' ? String(body[field]) : null);
       }
     }
   }
 
-  // Update slug if name changed
   if (body.name) {
     setClauses.push('slug = ?');
     values.push(slugify(body.name));
   }
 
   if (setClauses.length === 0) {
-    return sendError(res, 400, 'No fields to update');
+    return sendError(res, 400, 'No fields provided for update');
   }
 
-  setClauses.push('updated_at = NOW()');
   values.push(String(id));
 
   await query(
-    `UPDATE destinations SET ${setClauses.join(', ')} WHERE id = ?`,
+    `UPDATE destinations SET ${setClauses.join(', ')} WHERE destination_id = ?`,
     values
   );
 
   sendJSON(res, 200, { message: 'Destination updated successfully' });
 }
 
-// ---- Admin: DELETE /api/admin/destinations/:id ----
+// DELETE /api/admin/destinations/:id
 async function handleAdminDeleteDestination(req, res, id) {
   const session = requireAuth(req);
   if (!session) return sendError(res, 401, 'Unauthorized');
 
-  const [existing] = await query('SELECT id FROM destinations WHERE id = ?', [String(id)]);
+  const [existing] = await query('SELECT destination_id FROM destinations WHERE destination_id = ?', [String(id)]);
   if (existing.length === 0) {
     return sendError(res, 404, 'Destination not found');
   }
 
-  // Delete related images first
   try {
     await query('DELETE FROM destination_images WHERE destination_id = ?', [String(id)]);
-  } catch {
-    // Table might not exist
+  } catch (e) {
+    // ignore
   }
 
-  await query('DELETE FROM destinations WHERE id = ?', [String(id)]);
-
+  await query('DELETE FROM destinations WHERE destination_id = ?', [String(id)]);
   sendJSON(res, 200, { message: 'Destination deleted successfully' });
 }
 
 // ---------------------------------------------------------------------------
-// 7. Router
+// 8. Main HTTP Router
 // ---------------------------------------------------------------------------
-
 async function handleRequest(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
@@ -744,191 +674,97 @@ async function handleRequest(req, res) {
   const pathname = parsedUrl.pathname;
   const method = req.method;
 
-  // ---- API Routes ----
-  if (pathname.startsWith('/api/')) {
-    // All API routes require the database
-    if (!pool && !dbConnected) {
-      await initDatabase();
-    }
-    if (!pool) {
-      return sendError(res, 503, 'Database service is unavailable. Please try again later.');
-    }
-
-    try {
-      // --- Public API ---
-
-      // GET /api/destinations/featured (must come before :slug)
-      if (method === 'GET' && pathname === '/api/destinations/featured') {
-        return await handleGetFeaturedDestinations(req, res);
+  try {
+    // ---- API Routes ----
+    if (pathname.startsWith('/api/')) {
+      if (!pool && !dbConnected) {
+        await initDatabase();
       }
 
-      // GET /api/destinations
-      if (method === 'GET' && pathname === '/api/destinations') {
+      // Public API
+      if (pathname === '/api/destinations' && method === 'GET') {
         return await handleGetDestinations(req, res);
       }
-
-      // GET /api/destinations/:slug
-      const destSlugMatch = pathname.match(/^\/api\/destinations\/([a-z0-9\-]+)$/);
-      if (method === 'GET' && destSlugMatch) {
-        return await handleGetDestinationBySlug(req, res, destSlugMatch[1]);
+      if (pathname === '/api/destinations/featured' && method === 'GET') {
+        return await handleGetFeaturedDestinations(req, res);
       }
-
-      // GET /api/categories
-      if (method === 'GET' && pathname === '/api/categories') {
+      if (pathname.startsWith('/api/destinations/') && method === 'GET') {
+        const slug = pathname.replace('/api/destinations/', '');
+        return await handleGetDestinationBySlug(req, res, slug);
+      }
+      if (pathname === '/api/categories' && method === 'GET') {
         return await handleGetCategories(req, res);
       }
-
-      // GET /api/stats
-      if (method === 'GET' && pathname === '/api/stats') {
+      if (pathname === '/api/stats' && method === 'GET') {
         return await handleGetStats(req, res);
       }
-
-      // GET /api/timeline
-      if (method === 'GET' && pathname === '/api/timeline') {
+      if (pathname === '/api/timeline' && method === 'GET') {
         return await handleGetTimeline(req, res);
       }
-
-      // GET /api/districts
-      if (method === 'GET' && pathname === '/api/districts') {
+      if (pathname === '/api/districts' && method === 'GET') {
         return await handleGetDistricts(req, res);
       }
 
-      // --- Admin API ---
-
-      // POST /api/admin/login
-      if (method === 'POST' && pathname === '/api/admin/login') {
+      // Admin API
+      if (pathname === '/api/admin/login' && method === 'POST') {
         return await handleAdminLogin(req, res);
       }
-
-      // POST /api/admin/logout
-      if (method === 'POST' && pathname === '/api/admin/logout') {
+      if (pathname === '/api/admin/logout' && method === 'POST') {
         return await handleAdminLogout(req, res);
       }
-
-      // GET /api/admin/verify
-      if (method === 'GET' && pathname === '/api/admin/verify') {
+      if (pathname === '/api/admin/verify' && method === 'GET') {
         return await handleAdminVerify(req, res);
       }
-
-      // GET /api/admin/destinations
-      if (method === 'GET' && pathname === '/api/admin/destinations') {
+      if (pathname === '/api/admin/destinations' && method === 'GET') {
         return await handleAdminGetDestinations(req, res);
       }
-
-      // POST /api/admin/destinations
-      if (method === 'POST' && pathname === '/api/admin/destinations') {
+      if (pathname === '/api/admin/destinations' && method === 'POST') {
         return await handleAdminCreateDestination(req, res);
       }
-
-      // PUT /api/admin/destinations/:id
-      const adminUpdateMatch = pathname.match(/^\/api\/admin\/destinations\/(\d+)$/);
-      if (method === 'PUT' && adminUpdateMatch) {
-        return await handleAdminUpdateDestination(req, res, parseInt(adminUpdateMatch[1]));
+      if (pathname.startsWith('/api/admin/destinations/') && method === 'PUT') {
+        const id = pathname.replace('/api/admin/destinations/', '');
+        return await handleAdminUpdateDestination(req, res, id);
+      }
+      if (pathname.startsWith('/api/admin/destinations/') && method === 'DELETE') {
+        const id = pathname.replace('/api/admin/destinations/', '');
+        return await handleAdminDeleteDestination(req, res, id);
       }
 
-      // DELETE /api/admin/destinations/:id
-      const adminDeleteMatch = pathname.match(/^\/api\/admin\/destinations\/(\d+)$/);
-      if (method === 'DELETE' && adminDeleteMatch) {
-        return await handleAdminDeleteDestination(req, res, parseInt(adminDeleteMatch[1]));
-      }
-
-      // No API route matched
-      return sendError(res, 404, `API endpoint not found: ${method} ${pathname}`);
-    } catch (err) {
-      log('ERROR', `API error on ${method} ${pathname}: ${err.message}`);
-      return sendError(res, 500, 'Internal server error');
+      return sendError(res, 404, `API route not found: ${method} ${pathname}`);
     }
-  }
 
-  // ---- Static File Serving ----
-  let filePath = path.join(PUBLIC_DIR, pathname);
+    // ---- Static Files ----
+    let filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'index.html' : pathname);
+    serveStaticFile(req, res, filePath);
 
-  // Serve index.html for root
-  if (pathname === '/') {
-    filePath = path.join(PUBLIC_DIR, 'index.html');
-  }
-
-  // For SPA-like routes without extensions, try to serve the corresponding HTML
-  // or fall back to index.html
-  if (!path.extname(filePath)) {
-    const htmlFile = filePath + '.html';
-    if (fs.existsSync(htmlFile)) {
-      filePath = htmlFile;
-    } else if (fs.existsSync(path.join(filePath, 'index.html'))) {
-      filePath = path.join(filePath, 'index.html');
-    }
-  }
-
-  serveStaticFile(req, res, filePath);
-}
-
-// ---------------------------------------------------------------------------
-// 8. Create and Start Server
-// ---------------------------------------------------------------------------
-
-const server = http.createServer(async (req, res) => {
-  try {
-    await handleRequest(req, res);
   } catch (err) {
-    log('ERROR', `Unhandled error: ${err.message}`);
-    if (!res.headersSent) {
-      sendError(res, 500, 'Internal server error');
-    }
+    log('ERROR', `Unhandled request error: ${err.message}\n${err.stack}`);
+    sendError(res, 500, 'Internal Server Error');
   }
-});
-
-const PORT = parseInt(process.env.PORT || '3000', 10);
-
-// Ensure the public directory exists
-if (!fs.existsSync(PUBLIC_DIR)) {
-  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
-  log('INFO', 'Created /public directory.');
 }
 
-// Startup
-(async () => {
-  // Try connecting to the database
-  await initDatabase();
+// ---------------------------------------------------------------------------
+// 9. Startup
+// ---------------------------------------------------------------------------
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const server = http.createServer(handleRequest);
 
-  server.listen(PORT, () => {
-    console.log('');
-    console.log('  ╔══════════════════════════════════════════════════╗');
-    console.log('  ║                                                  ║');
-    console.log('  ║   🏛️  Bengal Heritage Atlas — Server Running     ║');
-    console.log('  ║                                                  ║');
-    console.log(`  ║   Local:  http://localhost:${PORT}                  ║`);
-    console.log(`  ║   DB:     ${dbConnected ? '✅ Connected' : '❌ Not connected'}                    ║`);
-    console.log('  ║                                                  ║');
-    console.log('  ╚══════════════════════════════════════════════════╝');
-    console.log('');
+initDatabase().then(() => {
+  server.listen(PORT, '0.0.0.0', () => {
+    log('INFO', `Bengal Heritage Atlas server running at http://localhost:${PORT}`);
   });
-})();
-
-// ---------------------------------------------------------------------------
-// 9. Global Error Handling
-// ---------------------------------------------------------------------------
-
-process.on('unhandledRejection', (reason, promise) => {
-  log('ERROR', `Unhandled Rejection: ${reason}`);
 });
 
-process.on('uncaughtException', (err) => {
-  log('ERROR', `Uncaught Exception: ${err.message}`);
-  // Give time for logging, then exit
-  setTimeout(() => process.exit(1), 1000);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  log('INFO', 'SIGTERM received. Shutting down gracefully…');
+process.on('SIGTERM', () => {
+  log('INFO', 'SIGTERM received, shutting down gracefully...');
   server.close(() => {
     if (pool) pool.end();
     process.exit(0);
   });
 });
 
-process.on('SIGINT', async () => {
-  log('INFO', 'SIGINT received. Shutting down…');
+process.on('SIGINT', () => {
+  log('INFO', 'SIGINT received, shutting down gracefully...');
   server.close(() => {
     if (pool) pool.end();
     process.exit(0);
