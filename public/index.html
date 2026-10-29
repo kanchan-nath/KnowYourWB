@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bengal Heritage Atlas — Discover the timeless heritage, architecture, temples, monuments, and cultural treasures of West Bengal, India.">
+    <meta name="keywords" content="West Bengal heritage, Bengal tourism, heritage destinations, cultural tourism, India travel">
+    <title>Bengal Heritage Atlas — Discover the Timeless Soul of Bengal</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+</head>
+<body>
+    <!-- Skip to Content -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/" class="nav-logo" aria-label="Bengal Heritage Atlas Home">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">
+                    <span class="logo-primary">Bengal Heritage</span>
+                    <span class="logo-secondary">Atlas</span>
+                </span>
+            </a>
+
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+            <ul class="nav-menu" id="navMenu" role="menubar">
+                <li class="nav-item" role="none">
+                    <a href="/" class="nav-link active" role="menuitem">Home</a>
+                </li>
+                <li class="nav-item" role="none">
+                    <a href="/destinations.html" class="nav-link" role="menuitem">Explore</a>
+                </li>
+                <li class="nav-item" role="none">
+                    <a href="#heritage-map" class="nav-link" role="menuitem">Map</a>
+                </li>
+                <li class="nav-item" role="none">
+                    <a href="#heritage-timeline" class="nav-link" role="menuitem">Timeline</a>
+                </li>
+                <li class="nav-item" role="none">
+                    <a href="/admin.html" class="nav-link" role="menuitem">Admin</a>
+                </li>
+            </ul>
+
+            <div class="nav-actions">
+                <button class="nav-search-btn" id="navSearchBtn" aria-label="Search destinations">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+                <a href="/destinations.html#favorites" class="nav-favorites-btn" aria-label="View favorites">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span class="favorites-count" id="favoritesCount" aria-label="Number of favorites">0</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Quick Search Overlay -->
+    <div class="search-overlay" id="searchOverlay" role="dialog" aria-label="Search destinations" aria-hidden="true">
+        <div class="search-overlay-content">
+            <button class="search-close-btn" id="searchCloseBtn" aria-label="Close search">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h2 class="search-overlay-title">Find Your Heritage</h2>
+            <div class="search-overlay-input-wrap">
+                <svg class="search-overlay-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchOverlayInput" class="search-overlay-input" placeholder="Search destinations, districts, or categories..." autocomplete="off" aria-label="Search destinations">
+            </div>
+            <div class="search-overlay-results" id="searchOverlayResults"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content">
+
+        <!-- Hero Section -->
+        <section class="hero" id="hero">
+            <div class="hero-bg">
+                <div class="hero-bg-overlay"></div>
+                <div class="hero-bg-pattern"></div>
+            </div>
+            <div class="hero-decorations">
+                <div class="hero-deco hero-deco-1"></div>
+                <div class="hero-deco hero-deco-2"></div>
+                <div class="hero-deco hero-deco-3"></div>
+            </div>
+            <div class="hero-content">
+                <div class="hero-badge reveal-fade">
+                    <span class="hero-badge-icon">✦</span>
+                    <span>West Bengal's Premier Heritage Guide</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="hero-title-line reveal-slide-up" style="--delay: 0.1s">Discover the</span>
+                    <span class="hero-title-line hero-title-accent reveal-slide-up" style="--delay: 0.3s">Timeless Soul</span>
+                    <span class="hero-title-line reveal-slide-up" style="--delay: 0.5s">of Bengal.</span>
+                </h1>
+                <p class="hero-subtitle reveal-fade" style="--delay: 0.7s">
+                    Journey through centuries of history, tradition, and architectural grandeur. 
+                    From the terracotta temples of Bishnupur to the majestic Sundarbans, explore 
+                    West Bengal's most extraordinary cultural treasures.
+                </p>
+                <div class="hero-actions reveal-fade" style="--delay: 0.9s">
+                    <a href="/destinations.html" class="btn btn-primary btn-lg">
+                        <span>Explore Destinations</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                    <a href="#heritage-categories" class="btn btn-secondary btn-lg">
+                        <span>Discover Our Heritage</span>
+                    </a>
+                </div>
+                <div class="hero-scroll-indicator reveal-fade" style="--delay: 1.2s">
+                    <span>Scroll to explore</span>
+                    <div class="scroll-arrow">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Section -->
+        <section class="stats-section" id="stats-section">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-card reveal-scale" style="--delay: 0.1s">
+                        <div class="stat-icon">🏛️</div>
+                        <div class="stat-number" data-target="0" id="statDestinations">0</div>
+                        <div class="stat-label">Heritage Destinations</div>
+                    </div>
+                    <div class="stat-card reveal-scale" style="--delay: 0.2s">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-number" data-target="0" id="statUnesco">0</div>
+                        <div class="stat-label">UNESCO Sites</div>
+                    </div>
+                    <div class="stat-card reveal-scale" style="--delay: 0.3s">
+                        <div class="stat-icon">📍</div>
+                        <div class="stat-number" data-target="0" id="statDistricts">0</div>
+                        <div class="stat-label">Districts Covered</div>
+                    </div>
+                    <div class="stat-card reveal-scale" style="--delay: 0.4s">
+                        <div class="stat-icon">📂</div>
+                        <div class="stat-number" data-target="0" id="statCategories">0</div>
+                        <div class="stat-label">Heritage Categories</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Destinations -->
+        <section class="section featured-section" id="featured-destinations">
+            <div class="container">
+                <div class="section-header reveal-fade">
+                    <span class="section-badge">Curated Collection</span>
+                    <h2 class="section-title">Featured Heritage Destinations</h2>
+                    <p class="section-subtitle">Handpicked landmarks that define the cultural landscape of West Bengal — from grand palaces and sacred temples to natural wonders.</p>
+                </div>
+                <div class="destinations-grid" id="featuredGrid">
+                    <!-- Populated by JavaScript from database -->
+                    <div class="loading-skeleton-grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <div class="section-cta reveal-fade">
+                    <a href="/destinations.html" class="btn btn-primary">
+                        View All Destinations
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Heritage Categories -->
+        <section class="section categories-section" id="heritage-categories">
+            <div class="container">
+                <div class="section-header reveal-fade">
+                    <span class="section-badge">Explore by Type</span>
+                    <h2 class="section-title">Heritage Categories</h2>
+                    <p class="section-subtitle">Navigate Bengal's diverse heritage through distinct categories, each revealing a unique facet of the region's rich history.</p>
+                </div>
+                <div class="categories-grid" id="categoriesGrid">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-skeleton-grid">
+                        <div class="skeleton-card skeleton-small"></div>
+                        <div class="skeleton-card skeleton-small"></div>
+                        <div class="skeleton-card skeleton-small"></div>
+                        <div class="skeleton-card skeleton-small"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Heritage Timeline -->
+        <section class="section timeline-section" id="heritage-timeline">
+            <div class="container">
+                <div class="section-header reveal-fade">
+                    <span class="section-badge">Through the Ages</span>
+                    <h2 class="section-title">Journey Through Centuries</h2>
+                    <p class="section-subtitle">Trace the remarkable history of Bengal from ancient civilizations to the modern era — a story told through its monuments, temples, and cultural milestones.</p>
+                </div>
+                <div class="timeline" id="timelineContainer">
+                    <div class="timeline-line"></div>
+                    <!-- Populated by JavaScript from database -->
+                    <div class="loading-spinner" id="timelineLoader">
+                        <div class="spinner"></div>
+                        <p>Loading timeline...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- UNESCO Section -->
+        <section class="section unesco-section" id="unesco-section">
+            <div class="container">
+                <div class="section-header reveal-fade">
+                    <span class="section-badge unesco-badge">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                        World Heritage
+                    </span>
+                    <h2 class="section-title">UNESCO World Heritage Sites</h2>
+                    <p class="section-subtitle">West Bengal is home to internationally recognized heritage sites that represent outstanding universal value.</p>
+                </div>
+                <div class="unesco-grid" id="unescoGrid">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-skeleton-grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Heritage Map -->
+        <section class="section map-section" id="heritage-map">
+            <div class="container">
+                <div class="section-header reveal-fade">
+                    <span class="section-badge">Discover by Location</span>
+                    <h2 class="section-title">Heritage Map of West Bengal</h2>
+                    <p class="section-subtitle">Explore destinations across the state — from the Himalayan foothills of Darjeeling to the mangrove forests of the Sundarbans.</p>
+                </div>
+                <div class="map-container">
+                    <div class="map-filters">
+                        <select id="mapRegionFilter" class="map-filter-select" aria-label="Filter by region">
+                            <option value="">All Regions</option>
+                            <option value="North Bengal">North Bengal</option>
+                            <option value="South Bengal">South Bengal</option>
+                            <option value="Central Bengal">Central Bengal</option>
+                            <option value="West Bengal">West Bengal</option>
+                        </select>
+                        <select id="mapCategoryFilter" class="map-filter-select" aria-label="Filter by category">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="map-layout">
+                        <div class="map-visual" id="mapVisual">
+                            <svg id="bengalMap" viewBox="0 0 500 700" class="bengal-map-svg" role="img" aria-label="Stylized map of West Bengal showing heritage destinations">
+                                <!-- West Bengal outline (stylized) -->
+                                <path class="map-outline" d="M250,30 C280,35 320,50 350,80 C380,110 400,150 410,190 C420,230 415,270 400,310 C390,340 370,370 360,400 C350,430 340,460 330,490 C320,520 310,545 300,565 C290,585 275,600 260,610 C245,620 230,625 220,630 C210,635 195,640 180,635 C165,630 150,615 140,600 C130,585 125,565 120,540 C115,515 110,490 108,465 C106,440 110,415 115,390 C120,365 130,340 140,315 C150,290 155,265 155,240 C155,215 150,190 155,170 C160,150 170,135 185,110 C200,85 220,60 235,45 C240,38 245,32 250,30Z" fill="var(--sandstone-light)" stroke="var(--forest-green)" stroke-width="2"/>
+                                <!-- Destination markers will be added by JS -->
+                                <g id="mapMarkers"></g>
+                            </svg>
+                            <div class="map-note">
+                                <small>ℹ️ This is a stylized representation. Marker positions are approximate.</small>
+                            </div>
+                        </div>
+                        <div class="map-destinations-list" id="mapDestinationsList">
+                            <h3 class="map-list-title">Destinations</h3>
+                            <div class="map-list-content" id="mapListContent">
+                                <div class="loading-spinner">
+                                    <div class="spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="map-destination-preview" id="mapPreview" aria-hidden="true">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section class="section gallery-section" id="gallery-section">
+            <div class="container">
+                <div class="section-header reveal-fade">
+                    <span class="section-badge">Visual Journey</span>
+                    <h2 class="section-title">Bengal's Architectural Splendor</h2>
+                    <p class="section-subtitle">A curated gallery showcasing the breathtaking architecture, sacred temples, grand monuments, and natural landscapes of West Bengal.</p>
+                </div>
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Populated by JavaScript -->
+                    <div class="loading-skeleton-grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Travel Inspiration CTA -->
+        <section class="section cta-section">
+            <div class="cta-bg">
+                <div class="cta-overlay"></div>
+            </div>
+            <div class="container">
+                <div class="cta-content reveal-fade">
+                    <h2 class="cta-title">Begin Your Heritage Journey</h2>
+                    <p class="cta-text">From the mist-covered hills of Darjeeling to the majestic temples of Bishnupur, every corner of West Bengal holds a story waiting to be discovered. Start exploring now.</p>
+                    <div class="cta-actions">
+                        <a href="/destinations.html" class="btn btn-gold btn-lg">
+                            Start Exploring
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <a href="/" class="footer-logo">
+                            <span class="logo-icon">🏛️</span>
+                            <span class="logo-text">
+                                <span class="logo-primary">Bengal Heritage</span>
+                                <span class="logo-secondary">Atlas</span>
+                            </span>
+                        </a>
+                        <p class="footer-tagline">Discovering and preserving the rich cultural heritage of West Bengal through digital exploration.</p>
+                    </div>
+                    <div class="footer-links">
+                        <h4 class="footer-heading">Explore</h4>
+                        <ul>
+                            <li><a href="/destinations.html">All Destinations</a></li>
+                            <li><a href="#heritage-map">Heritage Map</a></li>
+                            <li><a href="#heritage-timeline">Historical Timeline</a></li>
+                            <li><a href="#heritage-categories">Categories</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4 class="footer-heading">Categories</h4>
+                        <ul id="footerCategories">
+                            <li><a href="/destinations.html?category=1">Temples & Religious Sites</a></li>
+                            <li><a href="/destinations.html?category=2">Palaces & Architecture</a></li>
+                            <li><a href="/destinations.html?category=6">Natural Heritage</a></li>
+                            <li><a href="/destinations.html?category=7">UNESCO Sites</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4 class="footer-heading">Information</h4>
+                        <ul>
+                            <li><a href="#about">About the Project</a></li>
+                            <li><a href="#data-sources">Data Sources</a></li>
+                            <li><a href="/admin.html">Admin Dashboard</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <p class="footer-copyright">&copy; 2024 Bengal Heritage Atlas. Built with ❤️ for the heritage of West Bengal.</p>
+                <p class="footer-disclaimer">Historical information is compiled from publicly available sources. While we strive for accuracy, please verify details with official sources before planning visits.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

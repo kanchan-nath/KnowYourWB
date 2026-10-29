@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Discover the heritage, history, and cultural significance of this West Bengal destination.">
+    <title>Destination — Bengal Heritage Atlas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+</head>
+<body class="page-destination-detail">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-solid" id="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/" class="nav-logo" aria-label="Bengal Heritage Atlas Home">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">
+                    <span class="logo-primary">Bengal Heritage</span>
+                    <span class="logo-secondary">Atlas</span>
+                </span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            <ul class="nav-menu" id="navMenu" role="menubar">
+                <li class="nav-item" role="none"><a href="/" class="nav-link" role="menuitem">Home</a></li>
+                <li class="nav-item" role="none"><a href="/destinations.html" class="nav-link active" role="menuitem">Explore</a></li>
+                <li class="nav-item" role="none"><a href="/#heritage-map" class="nav-link" role="menuitem">Map</a></li>
+                <li class="nav-item" role="none"><a href="/#heritage-timeline" class="nav-link" role="menuitem">Timeline</a></li>
+                <li class="nav-item" role="none"><a href="/admin.html" class="nav-link" role="menuitem">Admin</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="/destinations.html" class="nav-favorites-btn" aria-label="Back to destinations">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-content">
+        <!-- Loading State -->
+        <div class="detail-loading" id="detailLoading">
+            <div class="container">
+                <div class="skeleton-detail-hero"></div>
+                <div class="skeleton-detail-content">
+                    <div class="skeleton-line skeleton-line-lg"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line skeleton-line-md"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div class="detail-error" id="detailError" style="display: none;">
+            <div class="container">
+                <div class="empty-state">
+                    <div class="empty-state-icon">😔</div>
+                    <h2 class="empty-state-title">Destination Not Found</h2>
+                    <p class="empty-state-text">We couldn't find the destination you're looking for. It may have been removed or the link may be incorrect.</p>
+                    <a href="/destinations.html" class="btn btn-primary">Browse All Destinations</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Destination Content (populated by JS) -->
+        <article class="destination-detail" id="destinationDetail" style="display: none;">
+            <!-- Hero Image -->
+            <section class="detail-hero" id="detailHero">
+                <div class="detail-hero-image-wrap">
+                    <img id="detailHeroImage" src="" alt="" class="detail-hero-image" loading="eager">
+                    <div class="detail-hero-overlay"></div>
+                </div>
+                <div class="detail-hero-content">
+                    <div class="container">
+                        <nav class="breadcrumbs breadcrumbs-light" aria-label="Breadcrumb">
+                            <a href="/">Home</a>
+                            <span class="breadcrumb-sep">/</span>
+                            <a href="/destinations.html">Destinations</a>
+                            <span class="breadcrumb-sep">/</span>
+                            <span class="breadcrumb-current" id="detailBreadcrumb"></span>
+                        </nav>
+                        <div class="detail-hero-badges">
+                            <span class="category-badge" id="detailCategory"></span>
+                            <span class="unesco-badge-detail" id="detailUnescoBadge" style="display: none;"></span>
+                        </div>
+                        <h1 class="detail-hero-title" id="detailTitle"></h1>
+                        <p class="detail-hero-location" id="detailLocation">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <span id="detailDistrict"></span>
+                        </p>
+                        <button class="detail-favorite-btn" id="detailFavoriteBtn" aria-label="Add to favorites">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            <span id="detailFavoriteText">Save</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="detail-image-credit" id="detailImageCredit"></div>
+            </section>
+
+            <!-- Content Grid -->
+            <section class="detail-content-section">
+                <div class="container">
+                    <div class="detail-grid">
+                        <!-- Main Content -->
+                        <div class="detail-main">
+                            <div class="detail-intro" id="detailShortDesc"></div>
+
+                            <div class="detail-section" id="historicalSection">
+                                <h2 class="detail-section-title">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    Historical Background
+                                </h2>
+                                <div class="detail-section-content" id="detailHistory"></div>
+                            </div>
+
+                            <div class="detail-section" id="significanceSection">
+                                <h2 class="detail-section-title">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                                    Heritage Significance
+                                </h2>
+                                <div class="detail-section-content" id="detailSignificance"></div>
+                            </div>
+
+                            <!-- Photo Gallery -->
+                            <div class="detail-section" id="gallerySection" style="display: none;">
+                                <h2 class="detail-section-title">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                                    Photo Gallery
+                                </h2>
+                                <div class="detail-gallery" id="detailGallery"></div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar -->
+                        <aside class="detail-sidebar">
+                            <!-- Quick Facts -->
+                            <div class="detail-info-card">
+                                <h3 class="info-card-title">Quick Facts</h3>
+                                <div class="info-card-content" id="detailQuickFacts">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Visit Information -->
+                            <div class="detail-info-card" id="visitInfoCard" style="display: none;">
+                                <h3 class="info-card-title">Visitor Information</h3>
+                                <div class="info-card-content" id="detailVisitInfo"></div>
+                            </div>
+
+                            <!-- Location -->
+                            <div class="detail-info-card" id="locationCard">
+                                <h3 class="info-card-title">Location</h3>
+                                <div class="info-card-content">
+                                    <div class="location-map-placeholder" id="detailLocationMap">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--forest-green)" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                        <p id="detailCoords"></p>
+                                        <a id="detailMapsLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">Open in Google Maps</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Source -->
+                            <div class="detail-info-card" id="sourceCard" style="display: none;">
+                                <h3 class="info-card-title">References</h3>
+                                <div class="info-card-content">
+                                    <a id="detailSourceLink" href="#" target="_blank" rel="noopener noreferrer" class="source-link">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                        <span>View Source</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Related Destinations -->
+            <section class="section related-section" id="relatedSection" style="display: none;">
+                <div class="container">
+                    <div class="section-header">
+                        <h2 class="section-title">Related Destinations</h2>
+                        <p class="section-subtitle">Explore more heritage sites nearby or in the same category.</p>
+                    </div>
+                    <div class="destinations-grid destinations-grid-related" id="relatedGrid"></div>
+                </div>
+            </section>
+        </article>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="footer-bottom">
+            <div class="container">
+                <p class="footer-copyright">&copy; 2024 Bengal Heritage Atlas.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/destination-detail.js"></script>
+</body>
+</html>

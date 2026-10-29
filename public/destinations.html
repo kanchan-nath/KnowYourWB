@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore heritage destinations across West Bengal — temples, palaces, monuments, natural wonders, and UNESCO World Heritage Sites.">
+    <title>Explore Destinations — Bengal Heritage Atlas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+</head>
+<body class="page-destinations">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-solid" id="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/" class="nav-logo" aria-label="Bengal Heritage Atlas Home">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">
+                    <span class="logo-primary">Bengal Heritage</span>
+                    <span class="logo-secondary">Atlas</span>
+                </span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            <ul class="nav-menu" id="navMenu" role="menubar">
+                <li class="nav-item" role="none"><a href="/" class="nav-link" role="menuitem">Home</a></li>
+                <li class="nav-item" role="none"><a href="/destinations.html" class="nav-link active" role="menuitem">Explore</a></li>
+                <li class="nav-item" role="none"><a href="/#heritage-map" class="nav-link" role="menuitem">Map</a></li>
+                <li class="nav-item" role="none"><a href="/#heritage-timeline" class="nav-link" role="menuitem">Timeline</a></li>
+                <li class="nav-item" role="none"><a href="/admin.html" class="nav-link" role="menuitem">Admin</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="nav-search-btn" id="navSearchBtn" aria-label="Search destinations">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+                <button class="nav-favorites-btn" id="showFavoritesBtn" aria-label="View favorites">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span class="favorites-count" id="favoritesCount">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay" role="dialog" aria-label="Search destinations" aria-hidden="true">
+        <div class="search-overlay-content">
+            <button class="search-close-btn" id="searchCloseBtn" aria-label="Close search">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h2 class="search-overlay-title">Find Your Heritage</h2>
+            <div class="search-overlay-input-wrap">
+                <svg class="search-overlay-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchOverlayInput" class="search-overlay-input" placeholder="Search destinations..." autocomplete="off">
+            </div>
+            <div class="search-overlay-results" id="searchOverlayResults"></div>
+        </div>
+    </div>
+
+    <main id="main-content">
+        <!-- Page Header -->
+        <section class="page-hero">
+            <div class="page-hero-bg"></div>
+            <div class="container">
+                <div class="page-hero-content">
+                    <nav class="breadcrumbs" aria-label="Breadcrumb">
+                        <a href="/">Home</a>
+                        <span class="breadcrumb-sep">/</span>
+                        <span class="breadcrumb-current">Explore Destinations</span>
+                    </nav>
+                    <h1 class="page-hero-title">Explore Heritage Destinations</h1>
+                    <p class="page-hero-subtitle">Discover the temples, palaces, monuments, and natural wonders that make West Bengal one of India's most culturally rich states.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filters & Search Bar -->
+        <section class="filters-section" id="filtersSection">
+            <div class="container">
+                <div class="filters-bar">
+                    <div class="search-input-wrap">
+                        <svg class="search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search by name, district, or keyword..." aria-label="Search destinations">
+                    </div>
+                    <div class="filter-controls">
+                        <select id="categoryFilter" class="filter-select" aria-label="Filter by category">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="districtFilter" class="filter-select" aria-label="Filter by district">
+                            <option value="">All Districts</option>
+                        </select>
+                        <select id="sortFilter" class="filter-select" aria-label="Sort destinations">
+                            <option value="featured">Featured First</option>
+                            <option value="name_asc">Name A–Z</option>
+                            <option value="name_desc">Name Z–A</option>
+                        </select>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn btn-ghost btn-sm" id="clearFilters" aria-label="Clear all filters">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Clear Filters
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="toggleFavoritesFilter" aria-label="Show favorites only">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            Favorites Only
+                        </button>
+                    </div>
+                </div>
+                <div class="active-filters" id="activeFilters" aria-live="polite"></div>
+                <div class="results-info" id="resultsInfo" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <!-- Destinations Grid -->
+        <section class="section destinations-list-section">
+            <div class="container">
+                <div class="destinations-grid destinations-grid-explore" id="destinationsGrid">
+                    <!-- Loading skeleton -->
+                    <div class="loading-skeleton-grid" id="destinationsLoader">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon">🔍</div>
+                    <h3 class="empty-state-title">No destinations found</h3>
+                    <p class="empty-state-text">Try adjusting your search or filters to discover more heritage sites.</p>
+                    <button class="btn btn-primary" id="emptyStateClear">Clear All Filters</button>
+                </div>
+                <!-- Pagination -->
+                <div class="pagination" id="pagination" aria-label="Destination pages"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-top">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <a href="/" class="footer-logo">
+                            <span class="logo-icon">🏛️</span>
+                            <span class="logo-text">
+                                <span class="logo-primary">Bengal Heritage</span>
+                                <span class="logo-secondary">Atlas</span>
+                            </span>
+                        </a>
+                        <p class="footer-tagline">Discovering and preserving the rich cultural heritage of West Bengal.</p>
+                    </div>
+                    <div class="footer-links">
+                        <h4 class="footer-heading">Quick Links</h4>
+                        <ul>
+                            <li><a href="/">Home</a></li>
+                            <li><a href="/destinations.html">Explore</a></li>
+                            <li><a href="/#heritage-map">Heritage Map</a></li>
+                            <li><a href="/#heritage-timeline">Timeline</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <p class="footer-copyright">&copy; 2024 Bengal Heritage Atlas.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/destinations.js"></script>
+</body>
+</html>
