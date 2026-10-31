@@ -51,15 +51,63 @@ FindUS/
 │       └── images/
 │           └── placeholder.jpg # High-res SVG fallback graphic
 ├── db/
+│   ├── init.js                 # Automated DB initialization tool (MySQL & TiDB Cloud SSL)
 │   ├── schema.sql              # Normalized MySQL 8 table schemas & indexes
 │   └── seed.sql                # 22+ researched starter destinations, 10 categories, 17 timeline events
+├── render.yaml                 # Render Blueprint configuration for zero-downtime deployment
 ├── server.js                   # Minimal Node.js HTTP server & REST API
-├── .env.example                # Environment variables template
+├── .env.example                # Environment variables template (with TiDB Cloud examples)
 ├── .env                        # Local environment configuration
 ├── .gitignore                  # Git exclusions
 ├── package.json                # Project dependencies (mysql2, bcryptjs)
 └── README.md                   # Complete documentation & setup guide
 ```
+
+---
+
+## ☁️ Deploying to Render & TiDB Cloud
+
+### 1. Set Up TiDB Cloud Database
+1. Go to [TiDB Cloud](https://tidbcloud.com/) and create a free **Serverless Cluster**.
+2. Click **Connect** and select **Connect with MySQL CLI** or **General Connection**.
+3. Note your connection details:
+   - **Host:** e.g. `gateway01.ap-southeast-1.prod.aws.tidbcloud.com`
+   - **Port:** `4000`
+   - **User:** e.g. `xxxxxxxx.root`
+   - **Password:** `<your-cluster-password>`
+   - **Database:** `bengal_heritage_atlas` (or create this DB in TiDB Cloud console)
+
+### 2. Initialize & Seed TiDB Cloud Database
+Run the setup script with your TiDB credentials from your local machine:
+```bash
+DB_HOST="your-tidb-host" \
+DB_PORT=4000 \
+DB_USER="your-tidb-user" \
+DB_PASSWORD="your-password" \
+DB_NAME="bengal_heritage_atlas" \
+DB_SSL=true \
+npm run db:setup
+```
+*(All 5 tables and 22 destinations will be automatically created and populated with SSL enabled).*
+
+### 3. Deploy to Render
+1. Push your repository to GitHub / GitLab.
+2. In [Render Dashboard](https://dashboard.render.com/):
+   - Click **New → Web Service**.
+   - Connect your repository.
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+   - **Health Check Path:** `/api/health`
+3. In the **Environment Variables** tab on Render, add:
+   - `NODE_ENV`: `production`
+   - `DB_HOST`: `<your-tidb-host>`
+   - `DB_PORT`: `4000`
+   - `DB_USER`: `<your-tidb-user>`
+   - `DB_PASSWORD`: `<your-tidb-password>`
+   - `DB_NAME`: `bengal_heritage_atlas`
+   - `DB_SSL`: `true`
+   - `ADMIN_SESSION_SECRET`: `<generate-any-random-string>`
+4. Click **Deploy Web Service**! Render will deploy the application and check `/api/health`.
 
 ---
 

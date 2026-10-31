@@ -1,0 +1,30 @@
+# Render Blueprint Specification for Bengal Heritage Atlas
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: bengal-heritage-atlas
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: bengal_heritage_atlas
+      - key: DB_SSL
+        value: "true"
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+

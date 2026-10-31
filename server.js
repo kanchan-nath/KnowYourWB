@@ -34,35 +34,72 @@ function loadEnv() {
 loadEnv();
 
 // ---------------------------------------------------------------------------
-// 2. MySQL Connection Pool
+// 2. MySQL Connection Pool (TiDB Cloud & MySQL 8 Compatible)
 // ---------------------------------------------------------------------------
 let pool = null;
 let dbConnected = false;
 
+function getPoolConfig() {
+  const databaseUrl = process.env.DATABASE_URL || process.env.TIDB_URL;
+  if (databaseUrl) {
+    try {
+      const parsed = new URL(databaseUrl);
+      const isTiDB = parsed.hostname.includes('tidbcloud.com') || parsed.searchParams.get('ssl') === 'true';
+      return {
+        host: parsed.hostname,
+        port: parseInt(parsed.port || '4000', 10),
+        user: decodeURIComponent(parsed.username),
+        password: decodeURIComponent(parsed.password),
+        database: parsed.pathname.replace(/^\//, '') || 'bengal_heritage_atlas',
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
+        ssl: isTiDB || process.env.DB_SSL === 'true' ? { rejectUnauthorized: true, minVersion: 'TLSv1.2' } : undefined,
+      };
+    } catch (e) {
+      log('WARN', 'Could not parse DATABASE_URL, using individual environment variables');
+    }
+  }
+
+  const host = process.env.DB_HOST || '127.0.0.1';
+  const isTiDB = host.includes('tidbcloud.com') || process.env.DB_SSL === 'true';
+  const defaultPort = isTiDB ? 4000 : 3306;
+
+  const poolConfig = {
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'bengal_heritage_atlas',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+  };
+
+  if (isTiDB || process.env.DB_SSL === 'true') {
+    poolConfig.host = host;
+    poolConfig.port = parseInt(process.env.DB_PORT || String(defaultPort), 10);
+    poolConfig.ssl = { rejectUnauthorized: true, minVersion: 'TLSv1.2' };
+  } else if (process.env.DB_SOCKET && fs.existsSync(process.env.DB_SOCKET)) {
+    poolConfig.socketPath = process.env.DB_SOCKET;
+  } else if (process.env.NODE_ENV !== 'production' && (host === '127.0.0.1' || host === 'localhost') && fs.existsSync('/tmp/mysql_brew.sock')) {
+    poolConfig.socketPath = '/tmp/mysql_brew.sock';
+  } else if (process.env.NODE_ENV !== 'production' && (host === '127.0.0.1' || host === 'localhost') && fs.existsSync('/tmp/mysql.sock')) {
+    poolConfig.socketPath = '/tmp/mysql.sock';
+  } else {
+    poolConfig.host = host;
+    poolConfig.port = parseInt(process.env.DB_PORT || '3306', 10);
+  }
+
+  return poolConfig;
+}
+
 async function initDatabase() {
   try {
     const mysql = require('mysql2/promise');
-    const poolConfig = {
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'bengal_heritage_atlas',
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 10000,
-    };
-
-    if (process.env.DB_SOCKET && fs.existsSync(process.env.DB_SOCKET)) {
-      poolConfig.socketPath = process.env.DB_SOCKET;
-    } else if (fs.existsSync('/tmp/mysql_brew.sock')) {
-      poolConfig.socketPath = '/tmp/mysql_brew.sock';
-    } else if (fs.existsSync('/tmp/mysql.sock')) {
-      poolConfig.socketPath = '/tmp/mysql.sock';
-    } else {
-      poolConfig.host = process.env.DB_HOST || '127.0.0.1';
-      poolConfig.port = parseInt(process.env.DB_PORT || '3306', 10);
-    }
+    const poolConfig = getPoolConfig();
 
     pool = mysql.createPool(poolConfig);
 
@@ -70,11 +107,11 @@ async function initDatabase() {
     await conn.ping();
     conn.release();
     dbConnected = true;
-    log('INFO', 'Connected to MySQL database "bengal_heritage_atlas" successfully.');
+    log('INFO', `Connected to database "${poolConfig.database}" at ${poolConfig.host || poolConfig.socketPath || 'socket'} successfully.`);
   } catch (err) {
     dbConnected = false;
     pool = null;
-    log('ERROR', `MySQL connection failed: ${err.message}`);
+    log('ERROR', `Database connection failed: ${err.message}`);
   }
 }
 
@@ -251,7 +288,14 @@ function serveStaticFile(req, res, filePath) {
 function streamFile(res, filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-  res.writeHead(200, { 'Content-Type': contentType });
+  const cacheControl = ext === '.html'
+    ? 'no-cache, must-revalidate'
+    : 'public, max-age=86400, stale-while-revalidate=604800';
+
+  res.writeHead(200, {
+    'Content-Type': contentType,
+    'Cache-Control': cacheControl,
+  });
   const stream = fs.createReadStream(filePath);
   stream.pipe(res);
   stream.on('error', () => {
@@ -663,6 +707,9 @@ async function handleRequest(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -677,6 +724,16 @@ async function handleRequest(req, res) {
   try {
     // ---- API Routes ----
     if (pathname.startsWith('/api/')) {
+      // Health Check for Render & uptime monitoring
+      if (pathname === '/api/health' && method === 'GET') {
+        return sendJSON(res, 200, {
+          status: 'ok',
+          database: dbConnected,
+          uptime: Math.floor(process.uptime()),
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       if (!pool && !dbConnected) {
         await initDatabase();
       }
